@@ -65,7 +65,7 @@ func (e *Elm) FindFirst(query string) *Elm
 //FindEach 查找子元素并输出
 func (e *Elm) FindEach(query string, f func(node *Elm))
 //AppendChild 添加子元素
-func (e *Elm) AppendChild(node *Elm)
+func (e *Elm) Append(node *Elm)
 //RemoveChild 移除子元素
 func (e *Elm) RemoveChild(node *Elm)
 //Copy 复制元素元素
@@ -75,7 +75,7 @@ func (e *Elm) Repace(node *Elm)
 //Remove 移除元素
 func (e *Elm) Remove()
 //InsertBefore 在当前元素前插入元素
-func (e *Elm) InsertBefore(node *Elm)
+func (e *Elm) Before(node *Elm)
 //InsertAfter 在当前元素后插入元素
-func (e *Elm) InsertAfter(node *Elm) 
+func (e *Elm) After(node *Elm) 
 ```
