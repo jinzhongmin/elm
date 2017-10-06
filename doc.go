@@ -34,7 +34,7 @@ func NewDoc(path string) *Doc {
 
 func (d *Doc) String() string {
 	buf := new(bytes.Buffer)
-	html.Render(buf, d.root.Node)
+	html.Render(buf, d.root.node)
 
 	return buf.String()
 }

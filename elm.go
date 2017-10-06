@@ -22,11 +22,11 @@ const (
 
 //Elm struct
 type Elm struct {
-	*html.Node
+	node *html.Node
 }
 
 //NewElm 从字符串创建*Elm
-//必须是只有一个源的树形结构 否则只能获取到第一个源
+//必须是只有一个根的树形结构 否则只能获取到第一个根
 func NewElm(str string) *Elm {
 	buf := bytes.NewBufferString(str)
 
@@ -41,7 +41,7 @@ func NewElm(str string) *Elm {
 }
 
 //NewElmFromFile 从文件创建*Elm
-//必须是只有一个源的树形结构 否则只能获取到第一个源
+//必须是只有一个根的树形结构 否则只能获取到第一个根
 func NewElmFromFile(file string) *Elm {
 	fs, err := os.Open(file)
 	if err != nil {
@@ -63,7 +63,7 @@ func (e *Elm) Attr(key string, val ...interface{}) string {
 
 	if val == nil {
 		//没有val参数，返回attr的值
-		attr := e.Node.Attr
+		attr := e.node.Attr
 		for i := range attr {
 			if attr[i].Key == key {
 				return attr[i].Val
@@ -72,15 +72,15 @@ func (e *Elm) Attr(key string, val ...interface{}) string {
 
 	} else if v, ok := val[0].(string); ok == true {
 		//有val参数，就设置attr的值
-		for i := range e.Node.Attr {
-			if e.Node.Attr[i].Key == key {
-				e.Node.Attr[i].Val = v
+		for i := range e.node.Attr {
+			if e.node.Attr[i].Key == key {
+				e.node.Attr[i].Val = v
 				return ""
 			}
 		}
 
 		//没有找到
-		e.Node.Attr = append(e.Node.Attr, html.Attribute{Key: key, Val: v})
+		e.node.Attr = append(e.node.Attr, html.Attribute{Key: key, Val: v})
 
 	} else {
 		log.Panicln("Elm.Attr(key, val): val must be nil or string")
@@ -90,11 +90,11 @@ func (e *Elm) Attr(key string, val ...interface{}) string {
 
 //Text 设置或返回text的值
 func (e *Elm) Text(text ...string) string {
-	if e.Node.Type == textNode {
+	if e.node.Type == textNode {
 		if len(text) > 0 {
-			e.Node.Data = text[0]
+			e.node.Data = text[0]
 		} else {
-			return e.Node.Data
+			return e.node.Data
 		}
 	}
 	return ""
@@ -180,59 +180,59 @@ func (e *Elm) FindEach(query string, f func(node *Elm)) {
 	}
 }
 
-//AppendChild 添加子元素
-func (e *Elm) AppendChild(node *Elm) {
-	e.Node.AppendChild(nodeCopy(node.Node))
+//Append 添加子元素
+func (e *Elm) Append(node *Elm) {
+	e.node.AppendChild(nodeCopy(node.node))
 }
 
 //RemoveChild 移除子元素
 func (e *Elm) RemoveChild(node *Elm) {
-	e.Node.RemoveChild(node.Node)
-	node.Node = nil
+	e.node.RemoveChild(node.node)
+	node.node = nil
 	node = nil
 }
 
 //Copy 复制元素元素
 func (e *Elm) Copy() *Elm {
-	node := nodeCopy(e.Node)
+	node := nodeCopy(e.node)
 	return &Elm{node}
 }
 
 //Repace 替换掉元素
 func (e *Elm) Repace(node *Elm) {
-	parent := e.Node.Parent
-	parent.InsertBefore(node.Node, e.Node)
-	parent.RemoveChild(e.Node)
+	parent := e.node.Parent
+	parent.InsertBefore(node.node, e.node)
+	parent.RemoveChild(e.node)
 
-	e.Node = nil
+	e.node = nil
 	e = nil
 }
 
 //Remove 移除元素
 func (e *Elm) Remove() {
-	parent := e.Node.Parent
-	parent.RemoveChild(e.Node)
+	parent := e.node.Parent
+	parent.RemoveChild(e.node)
 
-	e.Node = nil
+	e.node = nil
 	e = nil
 }
 
-//InsertBefore 在当前元素前插入元素
-func (e *Elm) InsertBefore(node *Elm) {
-	parent := e.Node.Parent
-	parent.InsertBefore(nodeCopy(node.Node), e.Node)
+//Before 在当前元素前插入元素
+func (e *Elm) Before(node *Elm) {
+	parent := e.node.Parent
+	parent.InsertBefore(nodeCopy(node.node), e.node)
 
 }
 
-//InsertAfter 在当前元素后插入元素
-func (e *Elm) InsertAfter(node *Elm) {
-	parent := e.Node.Parent
+//After 在当前元素后插入元素
+func (e *Elm) After(node *Elm) {
+	parent := e.node.Parent
 
 	//当前元素是否还有后一个兄弟元素
-	if e.Node.NextSibling != nil {
-		parent.InsertBefore(nodeCopy(node.Node), e.Node.NextSibling)
+	if e.node.NextSibling != nil {
+		parent.InsertBefore(nodeCopy(node.node), e.node.NextSibling)
 	} else {
-		parent.AppendChild(nodeCopy(node.Node))
+		parent.AppendChild(nodeCopy(node.node))
 	}
 
 }
@@ -240,7 +240,7 @@ func (e *Elm) InsertAfter(node *Elm) {
 //forEach 遍历elm本身、所有子、孙元素
 func elmEach(e *Elm, f func(node *Elm)) {
 	f(e)
-	lastNode := e.Node.FirstChild
+	lastNode := e.node.FirstChild
 	if lastNode == nil {
 		return
 	}
@@ -301,13 +301,13 @@ func elmTest(e *Elm, query string) bool {
 			}
 
 		} else if q[0] == '$' {
-			if e.Node.Type == 1 && e.Node.Data == q[1:] {
+			if e.node.Type == 1 && e.node.Data == q[1:] {
 				continue
 			} else {
 				return false
 			}
 		} else {
-			if e.Node.Type == 3 && e.Node.Data == q {
+			if e.node.Type == 3 && e.node.Data == q {
 				continue
 			} else {
 				return false
