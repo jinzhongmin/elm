@@ -180,16 +180,80 @@ func (e *Elm) FindEach(query string, f func(node *Elm)) {
 	}
 }
 
-//Append 添加子元素
-func (e *Elm) Append(node *Elm) {
+//Parent 获取父元素
+func (e *Elm) Parent() *Elm {
+	if e.node.Parent != nil {
+		p := new(Elm)
+		p.node = e.node.Parent
+		return p
+	}
+	return nil
+}
+
+//Child 获取子元素
+//
+func (e *Elm) Child(query ...interface{}) []*Elm {
+
+	childs := make([]*Elm, 0)
+	for child := e.node.FirstChild; child != nil; child = child.NextSibling {
+		e := new(Elm)
+		e.node = child
+		childs = append(childs, e)
+	}
+
+	if len(query) > 0 {
+		q, ok := query[0].(string)
+		if ok {
+			_childs := make([]*Elm, 0)
+			for i := range childs {
+				if elmTest(childs[i], q) {
+					_childs = append(_childs, childs[i])
+				}
+			}
+
+			return _childs
+		}
+	}
+
+	return childs
+}
+
+//ChildAppend 添加子元素
+func (e *Elm) ChildAppend(node *Elm) {
 	e.node.AppendChild(nodeCopy(node.node))
 }
 
-//RemoveChild 移除子元素
-func (e *Elm) RemoveChild(node *Elm) {
-	e.node.RemoveChild(node.node)
-	node.node = nil
-	node = nil
+//ChildRemove 移除子元素
+//可以是选择器，可以是*Elm或[]*Elm，node为空时全部移除
+func (e *Elm) ChildRemove(node ...interface{}) {
+	if len(node) > 0 {
+		switch node[0].(type) {
+		case string:
+			n, _ := node[0].(string)
+			childs := e.Child(n)
+			for i := range childs {
+				e.node.RemoveChild(childs[i].node)
+			}
+
+		case *Elm:
+			n, _ := node[0].(*Elm)
+			e.node.RemoveChild(n.node)
+
+		case []*Elm:
+			n, _ := node[0].([]*Elm)
+			for i := range n {
+				e.node.RemoveChild(n[i].node)
+			}
+		default:
+		}
+	} else {
+		for child := e.node.FirstChild; child != nil; {
+			_child := child.NextSibling
+			e.node.RemoveChild(child)
+			child = _child
+		}
+	}
+
 }
 
 //Copy 复制元素元素
@@ -235,6 +299,14 @@ func (e *Elm) After(node *Elm) {
 		parent.AppendChild(nodeCopy(node.node))
 	}
 
+}
+
+//String 以文本输出
+func (e *Elm) String() string {
+	buf := new(bytes.Buffer)
+	html.Render(buf, e.node)
+
+	return buf.String()
 }
 
 //forEach 遍历elm本身、所有子、孙元素
@@ -319,7 +391,7 @@ func elmTest(e *Elm, query string) bool {
 }
 
 //nodeCopy 复制node
-//AppendChild 等操作时将改变添加的节点的一系列指针
+//ChildAppend 等操作时将改变添加的节点的一系列指针
 //会造成指针混乱，因此需要复制节点
 func nodeCopy(src *html.Node) *html.Node {
 	dst := new(html.Node)
